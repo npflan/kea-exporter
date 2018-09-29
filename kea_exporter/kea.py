@@ -430,6 +430,18 @@ class KeaExporter:
             'reclaimed-leases'
         ]
 
+    def update(self):
+        for sock_path, module in [(self.sock_dhcp4_path, Module.DHCP4),
+                                  (self.sock_dhcp6_path, Module.DHCP6)]:
+            if sock_path is None:
+                continue
+
+            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
+                sock.connect(sock_path)
+                sock.send(KeaExporter.msg_statistics_all)
+                response = sock.recv(8192).decode()
+                self.parse_metrics(json.loads(response), module)
+
     def parse_metrics(self, response, module):
         for key, data in response['arguments'].items():
             if module is Module.DHCP4:
