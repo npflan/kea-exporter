@@ -6,8 +6,6 @@ from enum import Enum
 
 import click
 import hjson as json
-import inotify.adapters
-import inotify.constants
 from prometheus_client import Gauge
 
 
@@ -431,28 +429,6 @@ class KeaExporter:
             'reclaimed-declined-addresses',
             'reclaimed-leases'
         ]
-
-    def update(self):
-        reload_config = False
-        for event in self.inotify.event_gen():
-            if not event:
-                break
-            reload_config = True
-
-        if reload_config:
-            click.echo('Config was modified, reloading...', file=sys.stderr)
-            self.load_config()
-
-        for sock_path, module in [(self.sock_dhcp4_path, Module.DHCP4),
-                                  (self.sock_dhcp6_path, Module.DHCP6)]:
-            if sock_path is None:
-                continue
-
-            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
-                sock.connect(sock_path)
-                sock.send(KeaExporter.msg_statistics_all)
-                response = sock.recv(8192).decode()
-                self.parse_metrics(json.loads(response), module)
 
     def parse_metrics(self, response, module):
         for key, data in response['arguments'].items():
