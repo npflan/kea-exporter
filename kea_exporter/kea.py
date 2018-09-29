@@ -23,7 +23,7 @@ class KeaExporter:
     msg_statistics_all = bytes(
         json.dumpsJSON({'command': 'statistic-get-all'}), 'utf-8')
 
-    def __init__(self, config_path):
+    def __init__(self, sock_path):
         # kea control socket
         self.sock_dhcp6 = None
         self.sock_dhcp6_path = None
@@ -46,22 +46,7 @@ class KeaExporter:
         self.setup_dhcp6_metrics()
 
         # kea config
-        self.config_path = config_path
-        self.config = None
-
-        self.inotify = inotify.adapters.Inotify()
-        self.inotify.add_watch(
-            config_path, mask=inotify.constants.IN_MODIFY
-        )
-
-        self.load_config()
-
-    def load_config(self):
-        with open(self.config_path, 'r') as handle:
-            self.config = json.load(handle)
-
         try:
-            sock_path = self.config['Dhcp4']['control-socket']['socket-name']
             if not os.access(sock_path, os.F_OK):
                 raise FileNotFoundError()
             if not os.access(sock_path, os.R_OK | os.W_OK):
@@ -76,25 +61,6 @@ class KeaExporter:
             sys.exit(1)
         except PermissionError:
             click.echo('Dhcp4 control-socket is not read-/writeable.',
-                       file=sys.stderr)
-            sys.exit(1)
-
-        try:
-            sock_path = self.config['Dhcp6']['control-socket']['socket-name']
-            if not os.access(sock_path, os.F_OK):
-                raise FileNotFoundError()
-            if not os.access(sock_path, os.R_OK | os.W_OK):
-                raise PermissionError()
-            self.sock_dhcp6_path = sock_path
-        except KeyError:
-            click.echo('Dhcp6.control-socket.socket-name not configured, '
-                       'will not be exporting Dhcp6 metrics', file=sys.stderr)
-        except FileNotFoundError:
-            click.echo('Dhcp6 control-socket configured, but it does not '
-                       'exist. Is Kea running?', file=sys.stderr)
-            sys.exit(1)
-        except PermissionError:
-            click.echo('Dhcp6 control-socket is not read-/writeable.',
                        file=sys.stderr)
             sys.exit(1)
 

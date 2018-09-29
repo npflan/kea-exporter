@@ -8,13 +8,13 @@ from .kea import KeaExporter
 
 
 @click.command()
-@click.argument('config')
+@click.option('--path', default='/kea/socket/control', help='specify path to socket')
 @click.option('--address', default='0.0.0.0', help='Specify the address to bind against.')
 @click.option('--port', type=int, default=9547, help='Specify the port on which to listen.')
 @click.option('--interval', type=int, default=7.5, help='Specify the metrics update interval in seconds.')
 @click.version_option(prog_name=__PROJECT__, version=__VERSION__)
-def cli(config, address, port, interval):
-    exporter = KeaExporter(config)
+def cli(path, address, port, interval):
+    exporter = KeaExporter(path)
     exporter.update()
 
     start_http_server(port, address)
